@@ -1,49 +1,52 @@
 # Capistrano::WPCLI
 
-[![Dependency Status](https://www.versioneye.com/user/projects/561c9bfda193340f2f001728/badge.svg?style=flat)](https://www.versioneye.com/user/projects/561c9bfda193340f2f001728)
-[![Gem Version](https://badge.fury.io/rb/capistrano-wpcli.svg)](https://badge.fury.io/rb/capistrano-wpcli)
-
 **Note: this plugin works only with Capistrano 3.**
 
 Provides command line tools to facilitate Wordpress deploy.
 
 ## Multisite database support changes for The Number!
 We have added some changes to allow wordpress search-replace to modify all domains and subdomains for wp multisites.
-It assumes a few things though.
-1. Your local and production subdomains are the same.
-2. Your staging subdomains match production + staging. For example, if production is `sub.domain.com` then staging is `substaging.domain.com`
+
 ### Configuration
-Your `:wpcli_local_url` and should no longer include the protocol (`http://` or `https://`) this makes doing the subdomain substitution a lot easier.
-There is one new configuration to add to `deploy.rb`
-- - -
-    set :wpcli_subdomains
-An array of strings for each multisite subdomain. Ex: `['sub', 'sub2', 'sub3']`
+#### For Multisite
+`:wp_cli_local_url` and `:wp_cli_remote_url` have been replaced with `:wp_cli_local_urls` and `:wp_cli_remote_urls` which take an array of domain names including subdomains, but **excluding** the protocol (`http://` or `https://`).
+##### Important!
+Your domains in `:wp_cli_local_urls` and `:wp_cli_remote_urls` arrays must be the same length. Since it subs out the each domain with the matching index on the other array.
+##### Example:
+In deploy.rb
+```ruby
+set :wp_cli_local_urls, ['sub.domain.test:8888', 'sub2.domain.test:8888', 'sub3.domain2.test:8888']
+```
+In production.rb
+```ruby
+set :wp_cli_remote_urls, ['sub.domain.com', 'sub2.domain.com', 'sub3.domain2.com']
+```
+
 ### How it works
     wpcli:db:pull
 1. Replaces your local db with a copy of the remote db (same as always)
-2. Runs `wp search-replace` on the entire db changing all instances of `wp_cli_remote_url` value with `wp_cli_local_url` value.
-3. Runs `wp search-replace` to change the protocol from `https://` to `http://` this has to be done seperately because there are a few places where the url is stored without the protocol and we want to catch those in our first search-replace.
-4. Loops through `:wpcli_subdomains` array and runs `wp search-replace` to change protocol for all instances of `sub_domain`.`local_domain`. If pulling from staging it will also convert `substaging.domain.com` to `sub.localdomain.com`
+2. Loops through `:wp_cli_remote_urls` array
+3. Runs `wp search-replace` on the entire db changing all instances of `remote_url` value with `wp_cli_local_urls` value on the same index.
+4. Runs `wp search-replace` to change the protocol from `https://` to `http://`. This has to be done seperately because there are a few places where the url is stored without the protocol and we want to catch those in our first search-replace.
 - - -
     wpcli:db:push
 1. Replaces your remote db with a copy of the local db (same as always)
-2. Runs `wp search-replace` on the entire db changing all instances of `wp_cli_local_url` value with `wp_cli_remote_url` value.
-3. Runs `wp search-replace` to change the protocol from `http://` to `https://` this has to be done seperately because there are a few places where the url is stored without the protocol and we want to catch those in our first search-replace.
-4. Loops through `:wpcli_subdomains` array and runs `wp search-replace` to change protocol for all instances of `sub_domain`.`local_domain`. If pushing to staging it will also convert `sub.localdomain.com` to `substaging.domain.com`
+2. Loops through `:wp_cli_local_urls` array
+3. Runs `wp search-replace` on the entire db changing all instances of `local_url` value with `wp_cli_remote_url` value on the same index.
+4. Runs `wp search-replace` to change the protocol from `http://` to `https://`. This has to be done seperately because there are a few places where the url is stored without the protocol and we want to catch those in our first search-replace.
+
+#### For Single Site
+Gem works the same as the default. (See below)
 
 ## Installation
 
 Add this line to your application's Gemfile:
-
-    gem 'capistrano-wpcli'
-
+```ruby
+gem 'capistrano-wpcli', :git => 'https://github.com/thenumber/capistrano-wpcli'
+```
 And then execute:
 
     $ bundle
-
-Or install it yourself as:
-
-    $ gem install capistrano-wpcli
 
 ## Usage
 

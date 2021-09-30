@@ -5,13 +5,15 @@ namespace :load do
     # The url under which the wordpress installation is
     # available on the remote server
     set :wpcli_remote_url, "http://example.com"
+    # array of domains for use on multisites
+    set :wpcli_remote_urls, []
 
     # The url under which the wordpress installation is
     # available on the local server
     set :wpcli_local_url, "http://example.dev"
+    # array of local domains for use on multisite
+    set :wpcli_local_urls, []
 
-    # An array of subdomains in use by the multisite.
-    set :wpcli_subdomains, []
 
     # A local temp dir which is read and writeable
     set :local_tmp_dir, "/tmp"
@@ -58,12 +60,18 @@ namespace :wpcli do
             execute :gunzip, "-c", fetch(:wpcli_local_db_file), ">", local_tmp_file
             execute :wp, :db, :import, local_tmp_file
             execute :rm, fetch(:wpcli_local_db_file), local_tmp_file
-            execute :wp, "search-replace", fetch(:wpcli_remote_url), fetch(:wpcli_local_url), fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-            execute :wp, "search-replace", "https://" + fetch(:wpcli_local_url), "http://" + fetch(:wpcli_local_url), fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-            fetch(:wpcli_subdomains).each_with_index do |subdomain, i|
-              old_url = 'https://' + subdomain + "#{fetch(:stage) == :staging ? '' : '.'}" + fetch(:wpcli_local_url)
-              new_url = 'http://' + subdomain + "." + fetch(:wpcli_local_url)
-              execute :wp, "search-replace", old_url, new_url, fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + old_url
+            if fetch(:wpcli_remote_urls).present? || fetch(:wpcli_local_urls).present?
+              if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
+                fetch(:wpcli_remote_urls).each_with_index do |url, i|
+                  execute :wp, "search-replace", url, fetch(:wpcli_local_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                  execute :wp, "search-replace", "https://#{url}", "http://#{url}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                end
+              else
+                error = CommandError.new("remote_urls array and local_urls array not the same length")
+                raise error
+              end
+            else
+              execute :wp, "search-replace", fetch(:wpcli_remote_url), fetch(:wpcli_local_url), fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + fetch(:wpcli_remote_url)
             end
           end
         end
@@ -76,12 +84,18 @@ namespace :wpcli do
           execute :gunzip, "-c", fetch(:wpcli_local_db_file), ">", local_tmp_file
           execute :wp, :db, :import, local_tmp_file
           execute :rm, fetch(:wpcli_local_db_file), local_tmp_file
-          execute :wp, "search-replace", fetch(:wpcli_remote_url), fetch(:wpcli_local_url), fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-          execute :wp, "search-replace", "https://" + fetch(:wpcli_local_url), "http://" + fetch(:wpcli_local_url), fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-          fetch(:wpcli_subdomains).each_with_index do |subdomain, i|
-            old_url = 'https://' + subdomain + "#{fetch(:stage) == :staging ? '' : '.'}" + fetch(:wpcli_local_url)
-            new_url = 'http://' + subdomain + "." + fetch(:wpcli_local_url)
-            execute :wp, "search-replace", old_url, new_url, fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + old_url
+          if fetch(:wpcli_remote_urls).present? || fetch(:wpcli_local_urls).present?
+            if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
+              fetch(:wpcli_remote_urls).each_with_index do |url, i|
+                execute :wp, "search-replace", url, fetch(:wpcli_local_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                execute :wp, "search-replace", "https://#{url}", "http://#{url}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+              end
+            else
+              error = CommandError.new("remote_urls array and local_urls array not the same length")
+              raise error
+            end
+          else
+            execute :wp, "search-replace", fetch(:wpcli_remote_url), fetch(:wpcli_local_url), fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + fetch(:wpcli_remote_url)
           end
         end
       end
@@ -108,15 +122,18 @@ namespace :wpcli do
           execute :gunzip, "-c", fetch(:wpcli_remote_db_file), ">", remote_tmp_file
           execute :wp, :db, :import, remote_tmp_file
           execute :rm, fetch(:wpcli_remote_db_file), remote_tmp_file
-          execute :wp, "search-replace", fetch(:wpcli_local_url), fetch(:wpcli_remote_url), fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-          execute :wp, "search-replace", "http://" + fetch(:wpcli_remote_url), "https://" + fetch(:wpcli_remote_url), fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-          fetch(:wpcli_subdomains).each_with_index do |subdomain, i|
-            old_url = 'http://' + subdomain + "." + fetch(:wpcli_remote_url)
-            new_url = 'https://' + subdomain + "#{fetch(:stage) == :staging ? '' : '.'}" + fetch(:wpcli_remote_url)
-            execute :wp, "search-replace", old_url, new_url, fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + old_url
-            if fetch(:stage) == :staging
-              execute :wp, "search-replace", subdomain + '.' + fetch(:wpcli_remote_url), subdomain + fetch(:wpcli_remote_url), fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + subdomain + '.' + fetch(:wpcli_remote_url)
+          if fetch(:wpcli_remote_urls).present? || fetch(:wpcli_local_urls).present?
+            if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
+              fetch(:wpcli_local_urls).each_with_index do |url, i|
+                execute :wp, "search-replace", url, fetch(:wpcli_remote_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                execute :wp, "search-replace", "http://#{url}", "https://#{url}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+              end
+            else
+              error = CommandError.new("remote_urls array and local_urls array not the same length")
+              raise error
             end
+          else
+            execute :wp, "search-replace", fetch(:wpcli_local_url), fetch(:wpcli_remote_url), fetch(:wpcli_args) || "--skip-columns=guid", "--url=" + fetch(:wpcli_local_url)
           end
         end
       end
