@@ -42,7 +42,7 @@ namespace :wpcli do
 
   namespace :db do
 
-    desc "Pull the remote database"
+    desc "Pull the remote data"
     task :pull do
       on roles(:web) do
         within release_path do
@@ -60,7 +60,7 @@ namespace :wpcli do
             execute :gunzip, "-c", fetch(:wpcli_local_db_file), ">", local_tmp_file
             execute :wp, :db, :import, local_tmp_file
             execute :rm, fetch(:wpcli_local_db_file), local_tmp_file
-            if fetch(:wpcli_remote_urls).present? || fetch(:wpcli_local_urls).present?
+            if fetch(:wpcli_remote_urls).length > 0 || fetch(:wpcli_local_urls).length > 0
               if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
                 fetch(:wpcli_remote_urls).each_with_index do |url, i|
                   execute :wp, "search-replace", url, fetch(:wpcli_local_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
@@ -84,7 +84,7 @@ namespace :wpcli do
           execute :gunzip, "-c", fetch(:wpcli_local_db_file), ">", local_tmp_file
           execute :wp, :db, :import, local_tmp_file
           execute :rm, fetch(:wpcli_local_db_file), local_tmp_file
-          if fetch(:wpcli_remote_urls).present? || fetch(:wpcli_local_urls).present?
+          if fetch(:wpcli_remote_urls).length > 0 || fetch(:wpcli_local_urls).length > 0
             if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
               fetch(:wpcli_remote_urls).each_with_index do |url, i|
                 execute :wp, "search-replace", url, fetch(:wpcli_local_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
@@ -122,7 +122,7 @@ namespace :wpcli do
           execute :gunzip, "-c", fetch(:wpcli_remote_db_file), ">", remote_tmp_file
           execute :wp, :db, :import, remote_tmp_file
           execute :rm, fetch(:wpcli_remote_db_file), remote_tmp_file
-          if fetch(:wpcli_remote_urls).present? || fetch(:wpcli_local_urls).present?
+          if fetch(:wpcli_remote_urls).length > 0 || fetch(:wpcli_local_urls).length > 0
             if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
               fetch(:wpcli_local_urls).each_with_index do |url, i|
                 execute :wp, "search-replace", url, fetch(:wpcli_remote_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
