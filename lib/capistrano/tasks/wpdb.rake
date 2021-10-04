@@ -64,7 +64,7 @@ namespace :wpcli do
               if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
                 fetch(:wpcli_remote_urls).each_with_index do |url, i|
                   execute :wp, "search-replace", url, fetch(:wpcli_local_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-                  execute :wp, "search-replace", "https://#{url}", "http://#{url}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                  execute :wp, "search-replace", "https://#{fetch(:wpcli_local_urls)[i]}", "http://#{fetch(:wpcli_local_urls)[i]}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
                 end
               else
                 error = CommandError.new("remote_urls array and local_urls array not the same length")
@@ -88,7 +88,7 @@ namespace :wpcli do
             if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
               fetch(:wpcli_remote_urls).each_with_index do |url, i|
                 execute :wp, "search-replace", url, fetch(:wpcli_local_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-                execute :wp, "search-replace", "https://#{url}", "http://#{url}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                execute :wp, "search-replace", "https://#{fetch(:wpcli_local_urls)[i]}", "http://#{fetch(:wpcli_local_urls)[i]}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
               end
             else
               error = CommandError.new("remote_urls array and local_urls array not the same length")
@@ -126,7 +126,7 @@ namespace :wpcli do
             if fetch(:wpcli_remote_urls).length == fetch(:wpcli_local_urls).length
               fetch(:wpcli_local_urls).each_with_index do |url, i|
                 execute :wp, "search-replace", url, fetch(:wpcli_remote_urls)[i], fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
-                execute :wp, "search-replace", "http://#{url}", "https://#{url}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
+                execute :wp, "search-replace", "http://#{fetch(:wpcli_remote_urls)[i]}", "https://#{fetch(:wpcli_remote_urls)[i]}", fetch(:wpcli_args) || "--skip-columns=guid", "--all-tables-with-prefix=wp"
               end
             else
               error = CommandError.new("remote_urls array and local_urls array not the same length")
